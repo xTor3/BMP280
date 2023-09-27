@@ -12,7 +12,7 @@
 #define PRESS_XLSB 0xF9
 #define PRESS_LSB 0xF8
 #define PRESS_MSB 0xF7
-#define CONFIG 0xF5
+#define BMP280_CONFIG 0xF5
 #define CTRL_MEAS 0xF4
 #define STATUS 0xF3
 #define RESET 0xE0

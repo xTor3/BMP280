@@ -56,17 +56,17 @@ uint8_t BMP280::getMode() {
 }
 
 void BMP280::setTStandby(uint8_t t_sb) {
-   uint8_t c = readByte(BMP280_ADDRESS, CONFIG);
-   writeByte(BMP280_ADDRESS, CONFIG, (c & ~(0xE0)) | (t_sb << 5));
+   uint8_t c = readByte(BMP280_ADDRESS, BMP280_CONFIG);
+   writeByte(BMP280_ADDRESS, BMP280_CONFIG, (c & ~(0xE0)) | (t_sb << 5));
 }
 
 void BMP280::setFilter(uint8_t filter) {
-   uint8_t c = readByte(BMP280_ADDRESS, CONFIG);
-   writeByte(BMP280_ADDRESS, CONFIG, (c & ~(0x1C)) | (filter << 2));
+   uint8_t c = readByte(BMP280_ADDRESS, BMP280_CONFIG);
+   writeByte(BMP280_ADDRESS, BMP280_CONFIG, (c & ~(0x1C)) | (filter << 2));
 }
 
 void BMP280::set3WireSPI(uint8_t enable) {
-   writeByte(BMP280_ADDRESS, CONFIG, enable);
+   writeByte(BMP280_ADDRESS, BMP280_CONFIG, enable);
 }
 
 void BMP280::readPressRegisters(uint8_t* data) {
