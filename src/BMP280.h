@@ -5,6 +5,8 @@
 #include <Wire.h>
 #include <math.h>
 
+#define DEBUG
+
 #define BMP280_ADDRESS 0x76
 #define TEMP_XLSB 0xFC
 #define TEMP_LSB 0xFB
@@ -26,7 +28,7 @@
 */
 #define CALIB00 0x88
 
-#define TEMPERATURE_AT_SEA_LEVEL 20.0
+#define TEMPERATURE_AT_SEA_LEVEL 24
 #define STANDARD_TEMPERATURE_LAPSE_RATE -0.00825
 #define PRESSURE_AT_SEA_LEVEL 101325.0
 #define UNIVERSAL_GAS_CONSTANT 8.31432
@@ -37,7 +39,8 @@ class BMP280 {
    private:
       uint8_t writeByte(uint8_t address, uint8_t subAddress, uint8_t data);
       uint8_t readByte(uint8_t address, uint8_t subAddress);
-      uint8_t readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t* dest); 
+      uint8_t readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t* dest);
+
    public:
       BMP280();
       ~BMP280();
@@ -58,6 +61,8 @@ class BMP280 {
       void readPressRegisters(uint8_t* data);
       void readTempRegisters(uint8_t* data);
       void readMeasurementRegister(uint8_t* data);
+      uint32_t getAdcPressMeasurement();
+      uint32_t getAdcTempMeasurement();
       void getAdcMeasurement(uint32_t* data);
       uint16_t getDigX1(uint8_t t_or_p);
       int16_t getDigXX(uint8_t t_or_p, uint8_t n);

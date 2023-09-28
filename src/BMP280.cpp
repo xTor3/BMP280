@@ -25,62 +25,116 @@ uint8_t BMP280::isUpdate() {
    return (c & 0x01);
 }
 
+/*
+0: temperature measurements are skipped; 1: x1; 2: x2; 3: x4; 4: x8; 5,6 or 7: x16
+*/
 void BMP280::setOversamplingTemp(uint8_t osrs_t) {
    uint8_t c = readByte(BMP280_ADDRESS, CTRL_MEAS);
    writeByte(BMP280_ADDRESS, CTRL_MEAS, (c & ~(0xE0)) | (osrs_t << 5));
-   Serial.print("CTRL_MEAS: "); Serial.println(readByte(BMP280_ADDRESS, CTRL_MEAS), HEX);
+   #ifdef DEBUG
+      Serial.print("CTRL_MEAS: 0x"); Serial.println(readByte(BMP280_ADDRESS, CTRL_MEAS), HEX);
+   #endif
 }
 
 uint8_t BMP280::getOversamplingTemp() {
    return (readByte(BMP280_ADDRESS, CTRL_MEAS) & (0xE0)) >> 5;
 }
 
+/*
+0: pressure measurements are skipped; 1: x1; 2: x2; 3: x4; 4: x8; 5,6 or 7: x16
+*/
 void BMP280::setOversamplingPress(uint8_t osrs_p) {
    uint8_t c = readByte(BMP280_ADDRESS, CTRL_MEAS);
    writeByte(BMP280_ADDRESS, CTRL_MEAS, (c & ~(0x1C)) | (osrs_p << 2));
-   Serial.print("CTRL_MEAS: "); Serial.println(readByte(BMP280_ADDRESS, CTRL_MEAS), HEX);
+   #ifdef DEBUG
+      Serial.print("CTRL_MEAS: 0x"); Serial.println(readByte(BMP280_ADDRESS, CTRL_MEAS), HEX);
+   #endif
 }
 
 uint8_t BMP280::getOversamplingPress() {
    return (readByte(BMP280_ADDRESS, CTRL_MEAS) & (0x1C)) >> 2;
 }
 
+/*
+0: Sleep Mode, 1 or 2: Forced Mode, 3: Normal Mode
+*/
 void BMP280::setMode(uint8_t mode) {
    uint8_t c = readByte(BMP280_ADDRESS, CTRL_MEAS);
    writeByte(BMP280_ADDRESS, CTRL_MEAS, (c & ~(0x03)) | mode);
-   Serial.print("CTRL_MEAS: "); Serial.println(readByte(BMP280_ADDRESS, CTRL_MEAS), HEX);
+   #ifdef DEBUG
+      Serial.print("CTRL_MEAS: 0x"); Serial.println(readByte(BMP280_ADDRESS, CTRL_MEAS), HEX);
+   #endif
 }
 
 uint8_t BMP280::getMode() {
    return (readByte(BMP280_ADDRESS, CTRL_MEAS) & (0x03));
 }
-
+/*
+0: 0.5ms; 1: 62.5ms; 2: 125ms; 3: 250ms; 4: 500ms; 5: 1000ms; 6: 2000ms; 7: 4000ms
+*/
 void BMP280::setTStandby(uint8_t t_sb) {
    uint8_t c = readByte(BMP280_ADDRESS, BMP280_CONFIG);
    writeByte(BMP280_ADDRESS, BMP280_CONFIG, (c & ~(0xE0)) | (t_sb << 5));
+   #ifdef DEBUG
+      Serial.print("BMP280_CONFIG: 0x"); Serial.println(readByte(BMP280_ADDRESS, BMP280_CONFIG), HEX);
+   #endif
 }
 
+/*
+Filter Coefficient: Samples to reach >= 75% of step response
+1: 1; 2: 2; 4: 5; 8: 11; 16: 22
+*/
 void BMP280::setFilter(uint8_t filter) {
    uint8_t c = readByte(BMP280_ADDRESS, BMP280_CONFIG);
    writeByte(BMP280_ADDRESS, BMP280_CONFIG, (c & ~(0x1C)) | (filter << 2));
+   #ifdef DEBUG
+      Serial.print("BMP280_CONFIG: 0x"); Serial.println(readByte(BMP280_ADDRESS, BMP280_CONFIG), HEX);
+   #endif
 }
 
 void BMP280::set3WireSPI(uint8_t enable) {
    writeByte(BMP280_ADDRESS, BMP280_CONFIG, enable);
+   #ifdef DEBUG
+      Serial.print("BMP280_CONFIG: 0x"); Serial.println(readByte(BMP280_ADDRESS, BMP280_CONFIG), HEX);
+   #endif
 }
 
+/*
+data must be an array with 3 indices
+*/
 void BMP280::readPressRegisters(uint8_t* data) {
    readBytes(BMP280_ADDRESS, PRESS_MSB, 3, data);
 }
 
+/*
+data must be an array with 3 indices
+*/
 void BMP280::readTempRegisters(uint8_t* data) {
    readBytes(BMP280_ADDRESS, TEMP_MSB, 3, data);
 }
 
-void BMP280::readMeasurementRegister(uint8_t* raw) {
-   readBytes(BMP280_ADDRESS, PRESS_MSB, 6, raw);
+/*
+data must be an array with 6 indices
+*/
+void BMP280::readMeasurementRegister(uint8_t* data) {
+   readBytes(BMP280_ADDRESS, PRESS_MSB, 6, data);
 }
 
+uint32_t BMP280::getAdcPressMeasurement() {
+   uint8_t raw[3];
+   BMP280::readPressRegisters(raw);
+   return (((uint32_t)raw[0] << 12) | ((uint32_t)raw[1] << 3) | ((uint32_t)raw[2]));
+}
+
+uint32_t BMP280::getAdcTempMeasurement() {
+   uint8_t raw[3];
+   BMP280::readTempRegisters(raw);
+   return (((uint32_t)raw[0] << 12) | ((uint32_t)raw[1] << 3) | ((uint32_t)raw[2]));
+}
+
+/*
+data must be an array with 2 indices
+*/
 void BMP280::getAdcMeasurement(uint32_t* data) {
    uint8_t raw[6];
    BMP280::readMeasurementRegister(raw);
@@ -88,20 +142,27 @@ void BMP280::getAdcMeasurement(uint32_t* data) {
    data[1] = (((uint32_t)raw[3] << 12) | ((uint32_t)raw[4] << 3) | ((uint32_t)raw[5]));
 }
 
-//t_or_p: 0 = Temperature, 1 = Pressure
+/*
+t_or_p: 0 = Temperature, 1 = Pressure
+*/
 uint16_t BMP280::getDigX1(uint8_t t_or_p) {
    uint8_t data[2];
    readBytes(BMP280_ADDRESS, (CALIB00 + t_or_p*6), 2, data);
    return (((uint16_t)data[1] << 8) | (uint16_t)data[0]);
 }
 
-//t_or_p: 0 = Temperature, 1 = Pressure; n >= 2
+/*
+t_or_p: 0 = Temperature, 1 = Pressure; n >= 2
+*/
 int16_t BMP280::getDigXX(uint8_t t_or_p, uint8_t n) {
    uint8_t data[2];
    readBytes(BMP280_ADDRESS, (CALIB00 + t_or_p*6 + (n-1)*2), (uint8_t)2, data);
    return (((int16_t)data[1] << 8) | (int16_t)data[0]);
 }
 
+/*
+data must be an array with 2 indices
+*/
 void BMP280::getMeasurements(double* data) {
    uint32_t adc_data[2];
    BMP280::getAdcMeasurement(adc_data);
@@ -129,6 +190,9 @@ void BMP280::getMeasurements(double* data) {
    data[0] = data[0] + (var1 + var2 + ((double)BMP280::getDigXX(1, 7))) / 16.0;
 }
 
+/*
+p must be the pressure for which you want to know the height above sea level
+*/
 double BMP280::getRealAltitude(double p) {
    double h = ((TEMPERATURE_AT_SEA_LEVEL+273.15)/STANDARD_TEMPERATURE_LAPSE_RATE)*(pow(p/PRESSURE_AT_SEA_LEVEL, ((-UNIVERSAL_GAS_CONSTANT)*STANDARD_TEMPERATURE_LAPSE_RATE)/(GRAVITATIONAL_ACCELERATION_CONSTANT*MOLAR_MASS_OF_EARTH_AIR))-1);
    return h;
